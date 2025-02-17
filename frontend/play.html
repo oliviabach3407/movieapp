@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Play - Movie Rater</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">Movie Rater</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="movies.html">Movies</a></li>
+                    <li class="nav-item"><a class="nav-link" href="play.html">Play</a></li>
+                    <li class="nav-item" id="login-link"><a class="nav-link" href="login.html">Login / Sign-In</a></li>
+                    <li class="nav-item" id="account-link" style="display: none;"><a class="nav-link" href="account.html">Account</a></li>
+                    <li class="nav-item" id="logout-link" style="display: none;"><a class="nav-link" href="#" id="logout">Logout</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Form to Select Game Preferences -->
+    <form id="game-form">
+        <h3>Choose Your Preferences:</h3>
+        
+        <!-- Gamemode Selection -->
+        <div>
+            <label for="gamemode">Gamemode:</label>
+            <select id="gamemode" name="gamemode">
+                <option value="better">Better</option>
+                <option value="similar">Similar</option>
+            </select>
+        </div>
+        
+        <!-- Movie or Show Selection -->
+        <div>
+            <label for="content-type">What would you like to play with?</label>
+            <select id="content-type" name="content-type">
+                <option value="movies">Movies</option>
+                <option value="shows">Shows</option>
+            </select>
+        </div>
+        
+        <!-- Genre Selection -->
+        <div>
+            <label for="genres">Do you want to play in a certain genre?</label>
+            <div id="genre-list">
+                <label><input type="checkbox" name="genre" value="Action"> Action</label><br>
+                <label><input type="checkbox" name="genre" value="Drama"> Drama</label><br>
+                <label><input type="checkbox" name="genre" value="Thriller"> Thriller</label><br>
+                <label><input type="checkbox" name="genre" value="Horror"> Horror</label><br>
+                <!-- Add more genres dynamically if needed -->
+            </div>
+        </div>
+        
+        <!-- Bracket Size -->
+        <div>
+            <label for="bracket-size">How many movies would you like in your bracket?</label>
+            <input type="number" id="bracket-size" name="bracket-size" min="1" max="100" />
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Start Game</button>
+    </form>
+
+    <script>
+        if (token) {
+            document.getElementById("account-link").style.display = "inline";
+            document.getElementById("login-link").style.display = "none";
+            document.getElementById("logout-link").style.display = "inline";
+        }
+
+        document.getElementById("logout")?.addEventListener("click", () => {
+            localStorage.removeItem("auth_token");
+            window.location.href = "login.html";
+        }); 
+    </script>
+</body>
+</html>
