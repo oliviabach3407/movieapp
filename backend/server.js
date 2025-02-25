@@ -1,41 +1,30 @@
 const express = require("express");
 const path = require("path");
-const app = express();
+const cors = require("cors");
+const bodyParser = require("body-parser");
+// const authRoutes = require("./routes/authRoutes");
+// const userRoutes = require("./routes/userRoutes");
+// const checkAuth = require("./middleware/authMiddleware");
+const movieRoutes = require("./routes/movieRoutes");
+const db = require("./models/db");
 const jwt = require("jsonwebtoken");
 
-//get static files from the "frontend" folder
+const app = express();
+const PORT = 3000;
+const bcrypt = require("bcrypt");
+
+// app.use("/auth", authRoutes);
+// app.use("/users", userRoutes);
+app.use("/movies", movieRoutes);
+
+app.use(cors());
+app.use(bodyParser.json());
+app.use(express.json());
 app.use(express.static(path.join(__dirname, "../frontend")));
 
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "../frontend/index.html"));
 });
-
-const sqlite3 = require("sqlite3").verbose();
-const cors = require("cors");
-const bodyParser = require("body-parser");
-const bcrypt = require("bcrypt");
-
-const PORT = 3000;
-
-// Middleware
-app.use(cors());
-app.use(bodyParser.json());
-app.use(express.json()); 
-
-const dbPath = path.join(__dirname, "../database/movies.db");
-const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE, (err) => {
-    if (err) {
-        console.error("Error connecting to database:", err.message);
-    } else {
-        console.log("Connected to SQLite database.");
-    }
-});
-
-db.run(`CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE,
-    password TEXT
-)`);
 
 //Sign-Up Endpoint (Register a new user) - POST
 app.post("/signup", async (req, res) => {
@@ -155,17 +144,6 @@ app.delete("/users/:id", checkAuth, (req, res) => {
             return res.status(404).json({ success: false, message: "User not found" });
         }
         res.json({ success: true, message: "Account deleted successfully" });
-    });
-});
-
-//GET all movies
-app.get("/movies", (req, res) => {
-    db.all("SELECT * FROM movies", [], (err, rows) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-        res.json(rows);
     });
 });
 

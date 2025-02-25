@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Play - Movie Rater</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">Movie Rater</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="movies.html">Movies</a></li>
+                    <li class="nav-item"><a class="nav-link" href="play.html">Play</a></li>
+                    <li class="nav-item" id="login-link"><a class="nav-link" href="login.html">Login / Sign-In</a></li>
+                    <li class="nav-item" id="account-link" style="display: none;"><a class="nav-link" href="account.html">Account</a></li>
+                    <li class="nav-item" id="logout-link" style="display: none;"><a class="nav-link" href="#" id="logout">Logout</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Game Page HTML -->
+    <div id="game-container" class="container my-5">
+        <h2 class="text-center mb-4">Choose the Better Movie</h2>
+
+        <div class="row justify-content-center">
+            <!-- Movie 1 -->
+            <div id="movie1-container" class="col-md-5 mb-4">
+                <div class="card shadow-lg">
+                    <div class="card-body text-center">
+                        <button id="movie1-btn" class="btn btn-warning w-100 mb-2">I haven't seen this movie</button>
+                        <button id="movie1-like" class="btn btn-success w-100">I liked this movie</button>
+                        <h5 class="card-title" id="movie1-details"></h5>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Movie 2 -->
+            <div id="movie2-container" class="col-md-5 mb-4">
+                <div class="card shadow-lg">
+                    <div class="card-body text-center">
+                        <button id="movie2-btn" class="btn btn-warning w-100 mb-2">I haven't seen this movie</button>
+                        <button id="movie2-like" class="btn btn-success w-100">I liked this movie</button>
+                        <h5 class="card-title" id="movie2-details"></h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Function to get query parameters from the URL
+        function getQueryParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const gamemode = urlParams.get('gamemode');
+            const contentType = urlParams.get('contentType');
+            const bracketSize = urlParams.get('bracketSize');
+            const genres = urlParams.get('genres') ? urlParams.get('genres').split(",") : [];
+
+            return {
+                gamemode,
+                contentType,
+                bracketSize,
+                genres
+            };
+        }
+
+        // Use the query parameters to set up the game
+        const { gamemode, contentType, bracketSize, genres } = getQueryParams();
+        const blacklistedMovies = []; // To keep track of blacklisted (unseen) movies
+
+        console.log(`Starting a ${gamemode} game with ${contentType}, genres: ${genres.join(", ")}, and ${bracketSize} movies/shows.`);
+
+        // Fetch the initial movies for the bracket
+        async function fetchMovies() {
+            const response = await fetch(`/movies?genres=${genres.join(",")}&limit=${bracketSize}`);
+            let movies = await response.json();
+
+            // Filter out blacklisted movies
+            movies = movies.filter(movie => !blacklistedMovies.includes(movie.id));
+
+            // If not enough movies were found due to blacklisting, fetch more
+            while (movies.length < bracketSize) {
+                const additionalMovies = await fetch(`/movies?genres=${genres.join(",")}&limit=${bracketSize - movies.length}`);
+                const newMovies = await additionalMovies.json();
+                movies = [...movies, ...newMovies.filter(movie => !blacklistedMovies.includes(movie.id))];
+            }
+
+            displayMovies(movies);
+        }
+
+        function displayMovies(movies) {
+            // Display the movies in the UI
+            document.getElementById("movie1-details").innerText = movies[0].title;
+            document.getElementById("movie2-details").innerText = movies[1].title;
+
+            // Add event listeners for the buttons
+            document.getElementById("movie1-btn").addEventListener("click", () => replaceMovie(1, movies));
+            document.getElementById("movie2-btn").addEventListener("click", () => replaceMovie(2, movies));
+            document.getElementById("movie1-like").addEventListener("click", () => storePreference(movies[0]));
+            document.getElementById("movie2-like").addEventListener("click", () => storePreference(movies[1]));
+        }
+
+        function replaceMovie(movieNumber, currentMovies) {
+            // Get a new movie that isn't in the blacklist and isn't the same as the current movie
+            fetch(`/movies?genres=${genres.join(",")}&limit=1`)
+                .then(response => response.json())
+                .then(movies => {
+                    let newMovie = movies[0];
+
+                    // Ensure the new movie is not the same as the current one and is not blacklisted
+                    while (blacklistedMovies.includes(newMovie.id) || currentMovies.some(movie => movie.id === newMovie.id)) {
+                        fetch(`/movies?genres=${genres.join(",")}&limit=1`)
+                            .then(response => response.json())
+                            .then(newMovies => {
+                                newMovie = newMovies[0]; // Get a different movie if the new one is invalid
+                            });
+                    }
+
+                    // Update the movie details in the UI
+                    if (movieNumber === 1) {
+                        document.getElementById("movie1-details").innerText = newMovie.title;
+                        blacklistedMovies.push(currentMovies[0].id); // Blacklist the previous movie
+                    } else {
+                        document.getElementById("movie2-details").innerText = newMovie.title;
+                        blacklistedMovies.push(currentMovies[1].id); // Blacklist the previous movie
+                    }
+                });
+        }
+
+        function storePreference(movie) {
+            // Store the user's preference for the movie (liked)
+            fetch("/user/preferences", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ movieId: movie.id, preference: "liked" })
+            });
+
+            // Blacklist the movie if the user hasn't seen it and liked it
+            blacklistedMovies.push(movie.id);
+
+            // Proceed to the next round of the bracket
+            fetchMovies(); // Fetch the next pair of movies
+        }
+
+        // Initial fetch of movies for the game
+        fetchMovies();
+    </script>
+</body>
+</html>

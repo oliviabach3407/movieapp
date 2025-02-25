@@ -101,6 +101,26 @@
     </footer>
 
     <script>
+        document.getElementById("game-form").addEventListener("submit", function(event) {
+            event.preventDefault(); // Prevent form submission to handle the redirect logic
+
+            // Capture form values
+            const gamemode = document.getElementById("gamemode").value;
+            const contentType = document.getElementById("content-type").value;
+            const genres = Array.from(document.querySelectorAll('input[name="genre"]:checked')).map(checkbox => checkbox.value);
+            const bracketSize = document.getElementById("bracket-size").value;
+
+            // Build the query parameters for the redirect URL
+            let queryParams = `?gamemode=${gamemode}&contentType=${contentType}&bracketSize=${bracketSize}`;
+
+            if (genres.length > 0) {
+                queryParams += `&genres=${genres.join(",")}`;
+            }
+
+            // Redirect to the game page with the selected parameters
+            window.location.href = `game.html${queryParams}`;
+        });
+        const token = localStorage.getItem("auth_token");
         if (token) {
             document.getElementById("account-link").style.display = "inline";
             document.getElementById("login-link").style.display = "none";

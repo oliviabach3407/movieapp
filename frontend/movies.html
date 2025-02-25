@@ -31,8 +31,35 @@
 
     <!-- Movie List Section -->
     <div class="container my-5">
-        <h2 class="text-center">Movies List</h2>
-        <button class="btn btn-primary my-3" id="loadMovies">Load Movies</button>
+        <h2 class="text-center mb-4">Movies List</h2>
+
+        <!-- Warning & Load All Movies Button -->
+        <div class="alert alert-warning d-flex align-items-center gap-3">
+            <div>
+                <strong>Warning:</strong> Fetching all movies without filters (or with too few filters) may crash the browser.
+            </div>
+            <button class="btn btn-danger ms-auto" id="loadMovies">Load All Movies</button>
+        </div>
+
+        <!-- Search Form -->
+        <div class="card p-3 shadow-sm mb-4">
+            <div class="row g-2">
+                <div class="col-md-4">
+                    <input type="text" id="searchTitle" class="form-control" placeholder="Search by Title">
+                </div>
+                <div class="col-md-4">
+                    <input type="text" id="searchGenre" class="form-control" placeholder="Search by Genre">
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary w-100" id="searchMovies">Search</button>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-secondary w-100" id="resetMovies">Reset</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Movies Table -->
         <table class="table table-striped">
             <thead>
                 <tr>
@@ -47,6 +74,9 @@
                 <!-- Movies will be inserted here -->
             </tbody>
         </table>
+
+        <!-- Error Message -->
+        <div id="errorMessage" class="alert alert-danger d-none">No movies found.</div>
     </div>
 
     <!-- Footer -->
@@ -56,11 +86,57 @@
 
     <script>
         document.getElementById("loadMovies").addEventListener("click", () => {
-            fetch("http://localhost:3000/movies") // Fetch from API
-                .then(response => response.json())
+            fetchMovies();
+        });
+
+        document.getElementById("searchMovies").addEventListener("click", () => {
+            fetchMovies(true);
+        });
+
+        document.getElementById("resetMovies").addEventListener("click", function() {
+            document.getElementById("searchTitle").value = "";
+            document.getElementById("searchGenre").value = "";
+            document.getElementById("moviesTableBody").innerHTML = "";
+            document.getElementById("errorMessage").classList.add("d-none");
+        });
+
+        //grab the movies based on search filters/parameters inputted by the user
+        function fetchMovies(isSearch = false) {
+            let url = `${window.location.origin}/movies`;
+
+            let params = new URLSearchParams();
+
+            if (isSearch) {
+                const title = document.getElementById("searchTitle").value.trim();
+                const genre = document.getElementById("searchGenre").value.trim();
+                
+                if (title) params.append("title", title);  
+                if (genre) params.append("genre", genre);  
+            }
+
+            //convert the url into a format that's understood by fetch()
+            if (params.toString()) url += "?" + params.toString();
+
+            fetch(url)
+                .then(response => {
+                    console.log("Response status:", response.status);
+                    return response.json();
+                })
                 .then(data => {
+                    console.log("Fetched data:", data); //debugging
+                    if (!Array.isArray(data) || data.length === 0) {
+                        throw new Error("No movies found.");
+                    }
+                    return data;  // return data so the next .then() gets it
+                })
+                .then(data => {  //now 'data' is correctly passed to this block
                     const tableBody = document.getElementById("moviesTableBody");
-                    tableBody.innerHTML = ""; // Clear existing content
+                    const errorMessage = document.getElementById("errorMessage");
+
+                    tableBody.innerHTML = ""; //clear existing content
+                    errorMessage.classList.add("d-none"); 
+
+                    //dynamically generate HTML for the movies returned in the search results
                     data.forEach(movie => {
                         const row = `<tr>
                             <td>${movie.title}</td>
@@ -68,12 +144,85 @@
                             <td>${movie.release_date}</td>
                             <td>${movie.wins}</td>
                             <td>${movie.losses}</td>
+                            <td>
+                                <button class="btn btn-success win-btn" data-title="${movie.title}">Win</button>
+                                <button class="btn btn-danger lose-btn" data-title="${movie.title}">Lose</button>
+                            </td>
                         </tr>`;
                         tableBody.innerHTML += row;
                     });
                 })
-                .catch(error => console.error("Error fetching movies:", error));
+                .catch(error => {
+                    console.error("Error fetching movies:", error);
+                    document.getElementById("errorMessage").classList.remove("d-none");
+                });
+
+        }
+
+        //event listeners for the 'Win' and 'Lose' buttons
+        //they get the original value from the row and add one to that by calling updateMovie
+        document.getElementById("moviesTableBody").addEventListener("click", function (e) {
+            if (e.target.classList.contains("win-btn")) {
+                const title = e.target.getAttribute("data-title");
+                const row = e.target.closest("tr");
+                const currentWins = parseInt(row.cells[3].textContent.trim(), 10);
+                updateMovie(title, { wins: currentWins + 1 });
+            } else if (e.target.classList.contains("lose-btn")) {
+                const title = e.target.getAttribute("data-title");
+                const row = e.target.closest("tr");
+                const currentLosses = parseInt(row.cells[4].textContent.trim(), 10);
+                updateMovie(title, { losses: currentLosses + 1 });
+            }
         });
+
+        //ex: http://localhost:3000/movies?title=Avengers%3A%20Infinity%20War&wins=2
+        function updateMovie(title, updateData) {
+            const params = new URLSearchParams();
+            if (updateData.wins !== undefined) params.append("wins", updateData.wins);
+            if (updateData.losses !== undefined) params.append("losses", updateData.losses);
+
+            const url = `${window.location.origin}/movies?title=${encodeURIComponent(title)}&${params.toString()}`;
+
+            fetch(url, {
+                method: "POST",
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Failed to update movie.");
+                    }
+                    return response.json();
+                })
+                .then(updatedMovie => {
+                    updateTableRow(updatedMovie);
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    alert("Error updating movie.");
+                });
+        }
+
+        //update the table with the new value immediately
+        function updateTableRow(updatedMovie) {
+            const tableBody = document.getElementById("moviesTableBody");
+            const rows = tableBody.querySelectorAll("tr");
+            let movieFound = false;
+
+            rows.forEach(row => {
+                const titleCell = row.cells[0];
+                if (titleCell.textContent.trim() === updatedMovie.title) {
+                    row.cells[3].textContent = updatedMovie.wins;
+                    row.cells[4].textContent = updatedMovie.losses;
+                    movieFound = true;
+                }
+            });
+
+            //if the movie was not found, log an error (this shouldn't happen if the movie exists in the table)
+            if (!movieFound) {
+                console.error("Movie row not found for title:", updatedMovie.title);
+            }
+        }
+
+        //authentication UI handling
         const token = localStorage.getItem("auth_token");
         if (token) {
             document.getElementById("account-link").style.display = "inline";
@@ -84,7 +233,8 @@
         document.getElementById("logout")?.addEventListener("click", () => {
             localStorage.removeItem("auth_token");
             window.location.href = "login.html";
-        }); 
+        });
     </script>
+
 </body>
 </html>

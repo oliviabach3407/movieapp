@@ -41,13 +41,21 @@
     <!-- Main Content -->
     <div class="container my-5">
         <div class="row">
-            <div class="col-md-6">
-                <h2>How It Works</h2>
-                <p>Rate movies, track your favorite films, and see what others are watching. Join our community today!</p>
-                <a href="login.html" class="btn btn-primary">Get Started</a>
-            </div>
-            <div class="col-md-6">
-                <img src="https://via.placeholder.com/500x300" alt="Movies" class="img-fluid rounded">
+            <div>
+                <h2>How It Works (HELPFUL FOR GRADING):</h2>
+                <p>Example URLs for GET with/without parameters:</p>
+                <ul>
+                    <li>GET ALL MOVIES (returns json): "http://localhost:3000/movies" or just add "/movies" to the URL</li>
+                    <li>GET A SPECFIC MOVIE BY TITLE (returns json for Moana 2): "http://localhost:3000/movies?title=Moana+2" or just add "/movies?title=Moana+2" to the URL</li>
+                    <li>GET A NONEXISTENT MOVIE (tries to get Moana 3 and returns 404): "http://localhost:3000/movies?title=Moana+3" or just add "/movies?title=Moana+3" to the URL - 404 ONLY VISIBLE IN DEV TOOLS </li>
+                </ul>
+                <p><strong>^^^You can also do this from the Movies page through the UI</strong></p>
+                <p>Example URLs for POST (don't work in URL - accessible from "http://localhost:3000/movies.html" or just add "/movies.html" to the URL):</p>
+                <ul>
+                    <li>POST A NEW VALUE FOR WINS FOR MOANA 2: "http://localhost:3000/movies?title=Moana%202&wins=6"</li>
+                    <li>POST A NEW VALUE FOR LOSSES FOR MOANA 2: "http://localhost:3000/movies?title=Moana%202&losses=2"</li>
+                </ul>
+                <p><strong>^^^POST is triggered by clicking either "Win" or "Loss"</strong></p>
             </div>
         </div>
     </div>
